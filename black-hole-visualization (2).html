@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Black Hole Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #000;
+            overflow: hidden;
+        }
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        #info-sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            border-left: 1px solid rgba(64, 220, 255, 0.2);
+            padding: 20px;
+            color: white;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: -5px 0 15px rgba(64, 220, 255, 0.1);
+        }
+
+        .info-content {
+            padding: 15px 0;
+        }
+
+        .black-hole-image {
+            width: 100%;
+            height: 250px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            object-fit: cover;
+            transform: perspective(1000px) rotateY(0deg);
+            transition: transform 0.5s ease;
+            box-shadow: 0 0 20px rgba(64, 220, 255, 0.3);
+        }
+
+        .black-hole-image:hover {
+            transform: perspective(1000px) rotateY(10deg);
+        }
+
+        h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 28px;
+            text-shadow: 0 0 10px rgba(64, 220, 255, 0.3);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .info-section {
+            margin: 15px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            transform: perspective(1000px) rotateX(0deg);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-section:hover {
+            transform: perspective(1000px) rotateX(5deg);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .info-label {
+            color: rgba(64, 220, 255, 0.8);
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        @keyframes glow {
+            0% { text-shadow: 0 0 10px rgba(64, 220, 255, 0.3); }
+            50% { text-shadow: 0 0 20px rgba(64, 220, 255, 0.6); }
+            100% { text-shadow: 0 0 10px rgba(64, 220, 255, 0.3); }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas"></div>
+
+    <div id="info-sidebar">
+        <div class="info-content">
+            <h2>Sagittarius A*</h2>
+            <img src="Sagittarius A.jpg" alt="Sagittarius A*" class="black-hole-image">
+            
+            <div class="info-section">
+                <span class="info-label">Загальна інформація</span>
+                <p>Sagittarius A* (Стрілець A*) - надмасивна чорна діра в центрі нашої галактики Чумацький Шлях. Вона розташована в сузір'ї Стрільця на відстані близько 26 000 світлових років від Землі.</p>
+            </div>
+
+            <div class="info-section">
+                <span class="info-label">Фізичні характеристики</span>
+                <p>Маса: 4.3 мільйона сонячних мас<br>
+                Радіус горизонту подій: ~12 мільйонів кілометрів<br>
+                Вік: Невідомий, ймовірно сформувалася разом з галактикою</p>
+            </div>
+
+            <div class="info-section">
+                <span class="info-label">Акреційний диск</span>
+                <p>Навколо чорної діри обертається диск із газу та пилу, що світиться через надзвичайно високу температуру. Матерія, що падає в чорну діру, розігрівається до мільйонів градусів і випромінює рентгенівське випромінювання.</p>
+            </div>
+
+            <div class="info-section">
+                <span class="info-label">Цікаві факти</span>
+                <p>- Перше зображення Sagittarius A* було отримано у 2022 році за допомогою проєкту Event Horizon Telescope<br>
+                - Швидкість обертання матерії поблизу горизонту подій досягає 30% швидкості світла<br>
+                - Гравітаційне поле настільки сильне, що викривляє простір-час навколо себе</p>
+            </div>
+        </div>
+    </div>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, blackHole, accretionDisk, particles;
+        let diskContainer; // Додаємо контейнер для диску
+
+        function init() {
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 30, 30);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true,
+                logarithmicDepthBuffer: true 
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            document.getElementById('canvas').appendChild(renderer.domElement);
+
+            createBlackHole();
+            createAccretionDisk();
+            createParticles();
+            createStarfield();
+            
+            animate();
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function createBlackHole() {
+            const blackHoleGeometry = new THREE.SphereGeometry(10, 64, 64);
+            const blackHoleMaterial = new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                side: THREE.FrontSide
+            });
+            
+            blackHole = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
+            scene.add(blackHole);
+        }
+
+        function createAccretionDisk() {
+            // Створюємо контейнер для диску
+            diskContainer = new THREE.Object3D();
+            scene.add(diskContainer);
+
+            const diskGeometry = new THREE.RingGeometry(12, 25, 128, 2);
+            const diskMaterial = new THREE.MeshStandardMaterial({
+                color: 0xff7700,
+                side: THREE.DoubleSide,
+                emissive: 0xff4400,
+                emissiveIntensity: 2,
+                roughness: 0.3,
+                metalness: 0.7
+            });
+            
+            accretionDisk = new THREE.Mesh(diskGeometry, diskMaterial);
+            accretionDisk.rotation.x = Math.PI / 2;
+            diskContainer.add(accretionDisk);
+
+            // Світіння від акреційного диску
+            for(let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2;
+                const radius = 18;
+                const diskLight = new THREE.PointLight(0xff5500, 1, 30);
+                diskLight.position.set(
+                    Math.cos(angle) * radius,
+                    0,
+                    Math.sin(angle) * radius
+                );
+                accretionDisk.add(diskLight);
+            }
+        }
+
+        function createParticles() {
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particleCount = 1000;
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = new Float32Array(particleCount * 3);
+            
+            for(let i = 0; i < particleCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 12 + Math.random() * 13;
+                
+                positions[i * 3] = Math.cos(angle) * radius;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 2;
+                positions[i * 3 + 2] = Math.sin(angle) * radius;
+                
+                velocities[i * 3] = -Math.sin(angle);
+                velocities[i * 3 + 1] = 0;
+                velocities[i * 3 + 2] = Math.cos(angle);
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particlesGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                color: 0xff8844,
+                size: 0.2,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            diskContainer.add(particles); // Додаємо частинки до контейнера диску
+        }
+
+        function updateParticles() {
+            const positions = particles.geometry.attributes.position.array;
+            const velocities = particles.geometry.attributes.velocity.array;
+            
+            for(let i = 0; i < positions.length; i += 3) {
+                const x = positions[i];
+                const z = positions[i + 2];
+                const radius = Math.sqrt(x * x + z * z);
+                
+                const speed = 0.2 * Math.pow(radius, -0.5);
+                
+                const angle = Math.atan2(z, x);
+                const newAngle = angle + speed;
+                
+                positions[i] = radius * Math.cos(newAngle);
+                positions[i + 2] = radius * Math.sin(newAngle);
+                
+                if(radius < 11) {
+                    const newRadius = 25;
+                    positions[i] = newRadius * Math.cos(newAngle);
+                    positions[i + 2] = newRadius * Math.sin(newAngle);
+                }
+            }
+            
+            particles.geometry.attributes.position.needsUpdate = true;
+        }
+
+        function createStarfield() {
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsMaterial = new THREE.PointsMaterial({
+                color: 0xFFFFFF,
+                size: 0.1,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const starsVertices = [];
+            for(let i = 0; i < 20000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starsVertices.push(x, y, z);
+            }
+            
+            starsGeometry.setAttribute('position', 
+                new THREE.Float32BufferAttribute(starsVertices, 3));
+            
+            const starField = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(starField);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = Date.now() * 0.001;
+
+            if (accretionDisk) {
+                accretionDisk.rotation.z += 0.002;
+            }
+
+            if (diskContainer) {
+                // Додаємо коливання диску
+                diskContainer.rotation.x = Math.sin(time * 30) * 0.05; // Коливання вверх-вниз
+                diskContainer.rotation.z = Math.cos(time * 60) * 0.03; // Коливання вліво-вправо
+            }
+            
+            if (particles) {
+                updateParticles();
+            }
+            
+            camera.position.x = Math.cos(time * 0.1) * 40;
+            camera.position.z = Math.sin(time * 0.1) * 40;
+            camera.lookAt(0, 0, 0);
+            
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init();
+    </script>
+</body>
+</html>

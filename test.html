@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ktorá planéta si?</title>
+    <style>
+        /* Previous CSS styles remain the same */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(45deg, #0a0a2e, #1a1a4a);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #40dcff;
+            font-size: 2em;
+            text-shadow: 0 0 10px rgba(64, 220, 255, 0.3);
+        }
+
+        .question {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .question.active {
+            display: block;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            color: #fff;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(64, 220, 255, 0.2);
+        }
+
+        .option:hover {
+            background: rgba(64, 220, 255, 0.2);
+            transform: translateX(10px);
+        }
+
+        #result {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        #result img {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            margin: 20px auto;
+            display: block;
+            box-shadow: 0 0 20px rgba(64, 220, 255, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #40dcff, #a64dff);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <h1>Ktorá planéta si?</h1>
+        
+        <div class="question active" data-question="1">
+            <h2>1. Ktorá časť dňa je tvoja obľúbená?</h2>
+            <div class="options">
+                <div class="option" data-points="mercury">Svitanie</div>
+                <div class="option" data-points="venus">Poludnie</div>
+                <div class="option" data-points="earth">Večer</div>
+                <div class="option" data-points="mars">Noc</div>
+            </div>
+        </div>
+
+        <div class="question" data-question="2">
+            <h2>2. Aká je tvoja obľúbená teplota?</h2>
+            <div class="options">
+                <div class="option" data-points="mercury">Veľmi horúco</div>
+                <div class="option" data-points="earth">Mierna</div>
+                <div class="option" data-points="mars">Chladná</div>
+                <div class="option" data-points="neptune">Studená</div>
+            </div>
+        </div>
+
+        <div class="question" data-question="3">
+            <h2>3. Aká veľkosť ti najviac vyhovuje?</h2>
+            <div class="options">
+                <div class="option" data-points="mercury">Kompaktná</div>
+                <div class="option" data-points="earth">Stredná</div>
+                <div class="option" data-points="saturn">Veľká</div>
+                <div class="option" data-points="jupiter">Obrovská</div>
+            </div>
+        </div>
+
+        <div class="question" data-question="4">
+            <h2>4. Aká je tvoja obľúbená aktivita?</h2>
+            <div class="options">
+                <div class="option" data-points="mercury">Rýchly pohyb</div>
+                <div class="option" data-points="venus">Pokojné pozorovanie</div>
+                <div class="option" data-points="earth">Aktívny oddych</div>
+                <div class="option" data-points="jupiter">Objavovanie nového</div>
+            </div>
+        </div>
+
+        <div class="question" data-question="5">
+            <h2>5. Ktorá farba je ti najbližšia?</h2>
+            <div class="options">
+                <div class="option" data-points="mars">Červená</div>
+                <div class="option" data-points="earth">Modrá</div>
+                <div class="option" data-points="saturn">Zlatá</div>
+                <div class="option" data-points="uranus">Tyrkysová</div>
+            </div>
+        </div>
+
+        <div id="result">
+            <h2>Si -</h2>
+            <img src="/api/placeholder/200/200" alt="Planéta">
+            <p class="description"></p>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+    </div>
+
+    <script>
+        const planets = {
+            mercury: {
+                name: 'Merkúr',
+                description: 'Si rýchly, adaptabilný a vytrvalý. Ako planéta najbližšia k Slnku sa vieš vyrovnať s akoukoľvek výzvou a rýchlo sa prispôsobiť zmenám.'
+            },
+            venus: {
+                name: 'Venuša',
+                description: 'Si výrazná osobnosť so silným charakterom. Podobne ako najhorúcejšia planéta vyžaruješ silnú energiu a často sa stávaš stredobodom pozornosti.'
+            },
+            earth: {
+                name: 'Zem',
+                description: 'Si rôznorodý a vyvážený. Ako naša domovská planéta vieš udržiavať harmóniu a vytvárať príjemné prostredie pre všetkých okolo seba.'
+            },
+            mars: {
+                name: 'Mars',
+                description: 'Si odvážny prieskumník a priekopník. Podobne ako červená planéta si pripravený na nové výzvy a túžiš objavovať nové horizonty.'
+            },
+            jupiter: {
+                name: 'Jupiter',
+                description: 'Si prirodzený vodca s veľkým vplyvom na ostatných. Ako najväčšia planéta chrániš a podporuješ tých, ktorí ťa obklopujú.'
+            },
+            saturn: {
+                name: 'Saturn',
+                description: 'Si jedinečný a neopakovateľný. Podobne ako planéta s prstencami vynikáš svojou osobitou krásou a priťahuješ pozornosť.'
+            },
+            uranus: {
+                name: 'Urán',
+                description: 'Si netradičný mysliteľ s originálnym pohľadom na svet. Ako planéta, ktorá sa otáča "nabok", často nachádzaš neočakávané riešenia.'
+            },
+            neptune: {
+                name: 'Neptún',
+                description: 'Si snílek a vizionár. Podobne ako najvzdialenejšia planéta dokážeš vidieť to, čo je pre iných neviditeľné, a inšpiruješ svojimi nápadmi.'
+            }
+        };
+
+        let currentQuestion = 1;
+        let answers = {};
+
+        document.querySelectorAll('.option').forEach(option => {
+            option.addEventListener('click', () => {
+                const planet = option.getAttribute('data-points');
+                answers[currentQuestion] = planet;
+                
+                if (currentQuestion < 5) {
+                    document.querySelector(`[data-question="${currentQuestion}"]`).classList.remove('active');
+                    currentQuestion++;
+                    document.querySelector(`[data-question="${currentQuestion}"]`).classList.add('active');
+                    updateProgress();
+                } else {
+                    showResult();
+                }
+            });
+        });
+
+        function updateProgress() {
+            const progress = (currentQuestion - 1) * 20;
+            document.querySelector('.progress').style.width = `${progress}%`;
+        }
+
+        function showResult() {
+            const planetCounts = {};
+            Object.values(answers).forEach(planet => {
+                planetCounts[planet] = (planetCounts[planet] || 0) + 1;
+            });
+
+            const resultPlanet = Object.entries(planetCounts).reduce((a, b) => 
+                (a[1] > b[1] ? a : b))[0];
+
+            document.querySelectorAll('.question').forEach(q => q.style.display = 'none');
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.querySelector('h2').textContent = `Si - ${planets[resultPlanet].name}!`;
+            result.querySelector('.description').textContent = planets[resultPlanet].description;
+            document.querySelector('.progress').style.width = '100%';
+        }
+    </script>
+</body>
+</html>
